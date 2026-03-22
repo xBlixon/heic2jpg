@@ -1,11 +1,11 @@
-use std::{env, fs};
+use std::{fs};
 use std::fs::{create_dir_all, read_dir, remove_dir_all, remove_file};
 use std::path::Path;
-use image::{DynamicImage, ImageFormat, ImageReader, Rgb, RgbImage};
-use libheif_rs::{RgbChroma, ColorSpace, HeifContext, Result, LibHeif, Plane};
+use image::{DynamicImage, ImageFormat, ImageReader};
+use libheif_rs::{Result};
 use libheif_rs::integration::image::register_all_decoding_hooks;
 use zip::ZipArchive;
-use chrono::{Local, NaiveDate};
+use chrono::{Local};
 
 fn convert_all(source: &String, destination: &String) -> () {
     let source_dir = Path::new(source);
