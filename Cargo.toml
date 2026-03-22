@@ -6,3 +6,4 @@ edition = "2024"
 [dependencies]
 libheif-rs = { version = "2.6", default-features = false, features = ["v1_17"] }
 image = "0.25.10"
+zip = "8.3.1"
