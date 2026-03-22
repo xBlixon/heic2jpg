@@ -7,3 +7,4 @@ edition = "2024"
 libheif-rs = { version = "2.6", default-features = false, features = ["v1_17", "image"] }
 image = "0.25.10"
 zip = "8.3.1"
+chrono = "0.4.44"

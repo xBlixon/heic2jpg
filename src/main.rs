@@ -1,14 +1,21 @@
-use std::{fs};
-use std::fs::{read_dir};
+use std::{env, fs};
+use std::fs::{create_dir_all, read_dir, remove_dir_all, remove_file};
 use std::path::Path;
 use image::{DynamicImage, ImageFormat, ImageReader, Rgb, RgbImage};
 use libheif_rs::{RgbChroma, ColorSpace, HeifContext, Result, LibHeif, Plane};
 use libheif_rs::integration::image::register_all_decoding_hooks;
 use zip::ZipArchive;
+use chrono::{Local, NaiveDate};
 
 fn convert_all(source: &String, destination: &String) -> () {
     let source_dir = Path::new(source);
-    let destination_dir = Path::new(destination);
+    let destination_dir = Path::new(destination).join(today_directory());
+    match create_dir_all(destination_dir.to_str().unwrap()) {
+        Ok(_) => (),
+        Err(_) => {
+            println!("Today's directory already exists. Proceeding...");
+        },
+    }
 
     read_dir(source_dir).unwrap().for_each(|dir_file_result| {
         let dir_file = dir_file_result.unwrap();
@@ -30,7 +37,7 @@ fn convert_all(source: &String, destination: &String) -> () {
 }
 
 fn convert_to_jpeg(filename: &String) -> DynamicImage {
-    println!("\n\nCONVERTING FILE: {}", filename);
+    println!("\nCONVERTING FILE: {}", filename);
     let reader = ImageReader::open(filename).unwrap();
     let image = reader.decode().unwrap();
 
@@ -94,15 +101,34 @@ fn extract_files(dir: &String) -> () {
     });
 }
 
+fn today_directory() -> String {
+    let now = Local::now();
+    now.format("%Y-%m-%d").to_string()
+}
+
+fn wipe_source_dir(source_dir: &String) -> () {
+    let path = Path::new(source_dir);
+
+    read_dir(path).unwrap().for_each(|dir_file_result| {
+        let dir_file = dir_file_result.unwrap();
+        if dir_file.file_type().unwrap().is_dir() {
+            remove_dir_all(dir_file.path()).unwrap();
+        } else {
+            remove_file(dir_file.path()).unwrap();
+        }
+    })
+}
+
 fn main() -> Result<()> {
     register_all_decoding_hooks();
     let source_dir: String = String::from("files");
     let destination_dir: String = String::from("converted");
 
-    // extract_files(&source_dir);
+    extract_files(&source_dir);
 
     convert_all(&source_dir, &destination_dir);
 
+    wipe_source_dir(&source_dir);
 
     Ok(())
 }
