@@ -1,12 +1,34 @@
-use std::{fs, io};
-use std::fs::{read_dir, ReadDir};
-use std::iter::Zip;
+use std::{fs};
+use std::fs::{read_dir};
 use std::path::Path;
-use image::{ImageBuffer, Rgb, RgbImage};
-use libheif_rs::{Channel, RgbChroma, ColorSpace, HeifContext, Result, ItemId, LibHeif, Plane};
+use image::{Rgb, RgbImage};
+use libheif_rs::{RgbChroma, ColorSpace, HeifContext, Result, LibHeif, Plane};
+use libheif_rs::integration::image::register_all_decoding_hooks;
 use zip::ZipArchive;
 
-fn convert_to_jpeg(filename: String) -> RgbImage {
+fn convert_all(source: &String, destination: &String) -> () {
+    let source_dir = Path::new(source);
+    let destination_dir = Path::new(destination);
+
+    read_dir(source_dir).unwrap().for_each(|dir_file_result| {
+        let dir_file = dir_file_result.unwrap();
+        if !dir_file.file_type().unwrap().is_dir() {
+            return;
+        }
+
+        read_dir(dir_file.path()).unwrap().for_each(|image_file_result| {
+            let image_file = image_file_result.unwrap();
+            let image_path = image_file.path().display().to_string();
+
+            let jpeg = convert_to_jpeg(&image_path);
+            let mut jpeg_filename = image_file.path().file_stem().unwrap().display().to_string();
+            jpeg_filename.push_str(".jpg");
+            jpeg.save(destination_dir.join(jpeg_filename)).unwrap();
+        });
+    })
+}
+
+fn convert_to_jpeg(filename: &String) -> RgbImage {
     let ctx = HeifContext::read_from_file(filename.as_str()).expect("Couldn't open file");
     let handle = ctx.primary_image_handle().expect("No primary image handle");
 
@@ -45,7 +67,7 @@ fn paint_jpeg(plane: &Plane<&[u8]>, width: u32, height: u32) -> RgbImage {
     img_buf
 }
 
-fn extract_files(dir: String) -> () {
+fn extract_files(dir: &String) -> () {
 
     let path = Path::new(dir.as_str());
     read_dir(path).unwrap().for_each(|entry_result| {
@@ -104,13 +126,12 @@ fn extract_files(dir: String) -> () {
 }
 
 fn main() -> Result<()> {
-    let input_path = "sewing-threads.heic";
-    let output_path = "output.jpg";
-
     let source_dir: String = String::from("files");
     let destination_dir: String = String::from("converted");
 
-    extract_files(source_dir);
+    // extract_files(&source_dir);
+
+    // convert_all(&source_dir, &destination_dir);
 
 
     Ok(())

@@ -700,6 +700,7 @@ dependencies = [
  "cfg-if",
  "enumn",
  "four-cc",
+ "image",
  "libc",
  "libheif-sys",
 ]
