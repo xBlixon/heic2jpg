@@ -1,4 +1,4 @@
-use std::fs;
+use std::{fs, io};
 use std::fs::{read_dir, ReadDir};
 use std::iter::Zip;
 use std::path::Path;
@@ -7,17 +7,17 @@ use libheif_rs::{Channel, RgbChroma, ColorSpace, HeifContext, Result, ItemId, Li
 use zip::ZipArchive;
 
 fn convert_to_jpeg(filename: String) -> RgbImage {
-    let ctx = HeifContext::read_from_file(filename.as_str()).expect("Nie udało się odczytać pliku HEIC");
-    let handle = ctx.primary_image_handle().expect("Plik HEIC nie zawiera głównego obrazu");
+    let ctx = HeifContext::read_from_file(filename.as_str()).expect("Couldn't open file");
+    let handle = ctx.primary_image_handle().expect("No primary image handle");
 
     let lib = LibHeif::new();
     let image = lib.decode(&handle, ColorSpace::Rgb(RgbChroma::Rgb), None)
-        .expect("Błąd podczas dekodowania obrazu");
+        .expect("Error during image decoding");
     let width = handle.width();
     let height = handle.height();
 
     let planes = image.planes();
-    let plane = planes.interleaved.expect("Brak przeplotu pikseli (interleaved channel)");
+    let plane = planes.interleaved.expect("No interleaved plane found");
 
     let stride = plane.stride as u32;
     let data = plane.data;
@@ -71,15 +71,34 @@ fn extract_files(dir: String) -> () {
     read_dir(path).unwrap().for_each(|entry_result| {
         let entry = entry_result.unwrap();
         if entry.file_type().unwrap().is_dir() {
-            let mut nested_path = entry.path().display().to_string();
-            nested_path.push_str("\\");
-            nested_path.push_str(entry.file_name().to_str().unwrap());
+            if entry.file_name().to_str().unwrap().ends_with("_extracted") {
+                return;
+            }
 
-            let mut destination_path = entry.path().display().to_string();
-            destination_path.push_str("_extracted");
+            let destination_path = entry.path().parent().unwrap().to_owned();
 
-            fs::rename(nested_path, destination_path).unwrap();
-            fs::remove_dir(entry.path()).unwrap();
+            read_dir(entry.path()).unwrap().for_each(|entry_result| {
+                let sub_entry = entry_result.unwrap();
+
+                // let mut nested_path = entry.path().display().to_string();
+                // nested_path.push_str("\\");
+                // nested_path.push_str(entry.file_name().to_str().unwrap());
+                let mut sub_dir = sub_entry.file_name().into_string().unwrap();
+                sub_dir.push_str("_extracted");
+
+                let destpath = destination_path.join(sub_dir);
+
+                // destpath.push_str("_extracted");
+
+                match fs::rename(sub_entry.path(), destpath) {
+                    Ok(_) => (),
+                    Err(..) => {
+                        println!("Failed to extract sub directory: {}", sub_entry.path().display());
+                    }
+                };
+            });
+            fs::remove_dir_all(entry.path()).unwrap();
+
         }
     });
 }
@@ -89,14 +108,10 @@ fn main() -> Result<()> {
     let output_path = "output.jpg";
 
     let source_dir: String = String::from("files");
+    let destination_dir: String = String::from("converted");
 
     extract_files(source_dir);
 
-    // println!("Opening \"{}\"...", input_path);
-    // let img = convert_to_jpeg(input_path.to_string());
 
-    // img.save(output_path).expect("Nie udało się zapisać pliku JPEG");
-
-    // println!("\"{}\" has been converted to {}", input_path, output_path);
     Ok(())
 }
