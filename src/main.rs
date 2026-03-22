@@ -1,6 +1,6 @@
 use std::{fs};
 use std::fs::{create_dir_all, read_dir, remove_dir_all, remove_file};
-use std::path::Path;
+use std::path::{absolute, Path};
 use image::{DynamicImage, ImageFormat, ImageReader};
 use libheif_rs::{Result};
 use libheif_rs::integration::image::register_all_decoding_hooks;
@@ -8,8 +8,8 @@ use zip::ZipArchive;
 use chrono::{Local};
 
 fn convert_all(source: &String, destination: &String) -> () {
-    let source_dir = Path::new(source);
-    let destination_dir = Path::new(destination).join(today_directory());
+    let source_dir = absolute(source).unwrap();
+    let destination_dir = absolute(destination).unwrap().join(today_directory());
     match create_dir_all(destination_dir.to_str().unwrap()) {
         Ok(_) => (),
         Err(_) => {
@@ -44,16 +44,15 @@ fn convert_to_jpeg(filename: &String) -> DynamicImage {
     image
 }
 fn extract_files(dir: &String) -> () {
+    let path = absolute(dir.as_str()).unwrap();
 
-    let path = Path::new(dir.as_str());
-    read_dir(path).unwrap().for_each(|entry_result| {
+    read_dir(&path).unwrap().for_each(|entry_result| {
         let entry = entry_result.unwrap();
-        println!("{:?}", entry.file_name());
         if !entry.file_type().unwrap().is_file() {
             return;
         }
 
-        let zip_path = &entry.path().display().to_string();
+        let zip_path = entry.path().display().to_string();
         let zip_file = fs::File::open(&zip_path).unwrap();
         let mut archive = ZipArchive::new(zip_file).unwrap();
         let mut extract_path = dir.clone();
@@ -61,12 +60,12 @@ fn extract_files(dir: &String) -> () {
         extract_path.push('\\');
         extract_path.push_str(&file_stem);
 
-        println!("Extracting {}", entry.path().display());
+        println!("Extracting {}", zip_path);
         archive.extract(extract_path).unwrap();
     });
 
 
-    read_dir(path).unwrap().for_each(|entry_result| {
+    read_dir(&path).unwrap().for_each(|entry_result| {
         let entry = entry_result.unwrap();
         if entry.file_type().unwrap().is_dir() {
             if entry.file_name().to_str().unwrap().ends_with("_extracted") {
@@ -107,7 +106,7 @@ fn today_directory() -> String {
 }
 
 fn wipe_source_dir(source_dir: &String) -> () {
-    let path = Path::new(source_dir);
+    let path = absolute(source_dir).unwrap();
 
     read_dir(path).unwrap().for_each(|dir_file_result| {
         let dir_file = dir_file_result.unwrap();
@@ -121,8 +120,11 @@ fn wipe_source_dir(source_dir: &String) -> () {
 
 fn main() -> Result<()> {
     register_all_decoding_hooks();
-    let source_dir: String = String::from("files");
-    let destination_dir: String = String::from("converted");
+    let source_dir: String = String::from("src");
+    let destination_dir: String = String::from("dest");
+
+    // let path = absolute(source_dir.as_str()).unwrap();
+    // println!("\nEXTRACTING FILE: {}", path.display());
 
     extract_files(&source_dir);
 
