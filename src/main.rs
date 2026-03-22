@@ -1,7 +1,7 @@
 use std::{fs};
 use std::fs::{read_dir};
 use std::path::Path;
-use image::{Rgb, RgbImage};
+use image::{DynamicImage, ImageFormat, ImageReader, Rgb, RgbImage};
 use libheif_rs::{RgbChroma, ColorSpace, HeifContext, Result, LibHeif, Plane};
 use libheif_rs::integration::image::register_all_decoding_hooks;
 use zip::ZipArchive;
@@ -23,50 +23,19 @@ fn convert_all(source: &String, destination: &String) -> () {
             let jpeg = convert_to_jpeg(&image_path);
             let mut jpeg_filename = image_file.path().file_stem().unwrap().display().to_string();
             jpeg_filename.push_str(".jpg");
-            jpeg.save(destination_dir.join(jpeg_filename)).unwrap();
+            jpeg.save_with_format(destination_dir.join(jpeg_filename), ImageFormat::Jpeg).unwrap();
+            println!("CONVERTED!");
         });
     })
 }
 
-fn convert_to_jpeg(filename: &String) -> RgbImage {
-    let ctx = HeifContext::read_from_file(filename.as_str()).expect("Couldn't open file");
-    let handle = ctx.primary_image_handle().expect("No primary image handle");
+fn convert_to_jpeg(filename: &String) -> DynamicImage {
+    println!("\n\nCONVERTING FILE: {}", filename);
+    let reader = ImageReader::open(filename).unwrap();
+    let image = reader.decode().unwrap();
 
-    let lib = LibHeif::new();
-    let image = lib.decode(&handle, ColorSpace::Rgb(RgbChroma::Rgb), None)
-        .expect("Error during image decoding");
-    let width = handle.width();
-    let height = handle.height();
-
-    let planes = image.planes();
-    let plane = planes.interleaved.expect("No interleaved plane found");
-
-    let stride = plane.stride as u32;
-    let data = plane.data;
-
-    println!("\"{}\" read. Detected dimmensions: {} x {}", filename, width, height);
-    println!("Converting to JPG...");
-    paint_jpeg(&plane, width, height)
+    image
 }
-
-fn paint_jpeg(plane: &Plane<&[u8]>, width: u32, height: u32) -> RgbImage {
-    let mut img_buf = RgbImage::new(width, height);
-    let data = plane.data;
-    let stride = plane.stride as u32;
-
-    for y in 0..height {
-        for x in 0..width {
-            let offset = (y * stride + x * 3) as usize;
-            let r = data[offset];
-            let g = data[offset + 1];
-            let b = data[offset + 2];
-            img_buf.put_pixel(x, y, Rgb([r, g, b]));
-        }
-    }
-
-    img_buf
-}
-
 fn extract_files(dir: &String) -> () {
 
     let path = Path::new(dir.as_str());
@@ -126,12 +95,13 @@ fn extract_files(dir: &String) -> () {
 }
 
 fn main() -> Result<()> {
+    register_all_decoding_hooks();
     let source_dir: String = String::from("files");
     let destination_dir: String = String::from("converted");
 
     // extract_files(&source_dir);
 
-    // convert_all(&source_dir, &destination_dir);
+    convert_all(&source_dir, &destination_dir);
 
 
     Ok(())
