@@ -18,8 +18,12 @@ fn convert_all(source: &String, destination: &String) -> () {
             return;
         }
 
-        let dir_name = dir_file.file_name().to_str().unwrap().to_owned();
-        let final_dir = destination_dir.join(dir_name);
+        let mut dir_name = dir_file.file_name().to_str().unwrap().to_owned();
+        let mut dated_dir_name = today_directory();
+        dated_dir_name.push('_');
+        dated_dir_name.push_str(dir_name.as_str());
+
+        let final_dir = destination_dir.join(dated_dir_name);
 
 
         match create_dir_all(final_dir.to_str().unwrap()) {
@@ -71,12 +75,11 @@ fn extract_files(dir: &String) -> () {
     });
 
 
+    //Move inner folders of the extracted zip to the
+    //same directory as the zip.
     read_dir(&path).unwrap().for_each(|entry_result| {
         let entry = entry_result.unwrap();
         if entry.file_type().unwrap().is_dir() {
-            if entry.file_name().to_str().unwrap().ends_with("_extracted") {
-                return;
-            }
 
             let destination_path = entry.path().parent().unwrap().to_owned();
 
@@ -87,7 +90,7 @@ fn extract_files(dir: &String) -> () {
                 // nested_path.push_str("\\");
                 // nested_path.push_str(entry.file_name().to_str().unwrap());
                 let mut sub_dir = sub_entry.file_name().into_string().unwrap();
-                sub_dir.push_str("_extracted");
+                // sub_dir.push_str("_extracted");
 
                 let destpath = destination_path.join(sub_dir);
 
@@ -136,7 +139,7 @@ fn main() -> Result<()> {
 
     convert_all(&source_dir, &destination_dir);
 
-    // wipe_source_dir(&source_dir);
+    wipe_source_dir(&source_dir);
 
     Ok(())
 }
