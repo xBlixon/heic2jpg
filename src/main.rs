@@ -1,17 +1,14 @@
-use std::{fs};
 use std::fs::{create_dir_all, read_dir, remove_dir_all, remove_file};
-use std::path::{absolute, Path, PathBuf};
+use std::path::{absolute};
 use image::{DynamicImage, ImageFormat, ImageReader};
 use libheif_rs::{Result};
 use libheif_rs::integration::image::register_all_decoding_hooks;
-use zip::ZipArchive;
 use chrono::{Local};
 
 mod extract;
 
 fn convert_all(source: &String, destination: &String) -> () {
     let source_dir = absolute(source).unwrap();
-    // let destination_dir = absolute(destination).unwrap().join(today_directory());
     let destination_dir = absolute(destination).unwrap();
 
     read_dir(source_dir).unwrap().for_each(|unzip_file_result| {
