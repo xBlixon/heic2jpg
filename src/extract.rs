@@ -15,13 +15,10 @@ fn sanitize_zip_path(path: PathBuf) -> PathBuf {
 
     for component in path.components() {
         match component {
-            // 1. Obsługa litery dysku (np. C:) i głównego katalogu (/)
-            // Te elementy zostawiamy dokładnie takimi, jakimi są.
             Component::Prefix(_) | Component::RootDir => {
                 clean_path.push(component.as_os_str());
             }
 
-            // 2. Obsługa normalnych nazw folderów i plików
             Component::Normal(os_str) => {
                 let trimmed = os_str.to_string_lossy().trim().to_string();
                 if !trimmed.is_empty() {
@@ -29,8 +26,6 @@ fn sanitize_zip_path(path: PathBuf) -> PathBuf {
                 }
             }
 
-            // 3. Kropki (./) i wyjście w górę (../) ignorujemy w nazwach ZIP,
-            // bo zazwyczaj chcemy "płaskiej" i bezpiecznej ścieżki docelowej.
             _ => {}
         }
     }

@@ -45,10 +45,7 @@ fn convert_all(source: &String, destination: &String) -> () {
                 let jpeg = convert_to_jpeg(&image_path);
                 let mut jpeg_filename = image_file.path().file_stem().unwrap().display().to_string();
                 jpeg_filename.push_str(".jpg");
-                let mut enclosed = String::from("\"");
-                enclosed.push_str(final_dir.join(jpeg_filename).to_str().unwrap());
-                enclosed.push_str("\"");
-                match jpeg.save_with_format(enclosed, ImageFormat::Jpeg) {
+                match jpeg.save_with_format(final_dir.join(jpeg_filename), ImageFormat::Jpeg) {
                     Ok(_) => (),
                     Err(e) => {
                         println!("Failed to save HEIC in JPEG: {}", e);
@@ -92,9 +89,6 @@ fn main() -> Result<()> {
     register_all_decoding_hooks();
     let source_dir: String = String::from("src");
     let destination_dir: String = String::from("dest");
-
-    // let path = absolute(source_dir.as_str()).unwrap();
-    // println!("\nEXTRACTING FILE: {}", path.display());
 
     extract::extract_files(&source_dir);
 
