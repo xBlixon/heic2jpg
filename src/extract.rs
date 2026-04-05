@@ -34,13 +34,11 @@ fn sanitize_zip_path(path: PathBuf) -> PathBuf {
 }
 
 fn unzip(archive: &mut ZipArchive<File>, destination: &Path) {
-    let mut some_files_failed = false;
     for i in 0..archive.len() {
         let mut file = match archive.by_index(i) {
             Ok(file) => file,
             Err(e) => {
                 eprintln!("Error: unable to open file {i} in archive: {e}");
-                some_files_failed = true;
                 continue;
             }
         };
@@ -51,7 +49,6 @@ fn unzip(archive: &mut ZipArchive<File>, destination: &Path) {
                     "Error: unable to extract file {:?} because it has an invalid path.",
                     file.name()
                 );
-                some_files_failed = true;
                 continue;
             }
         };
@@ -66,7 +63,6 @@ fn unzip(archive: &mut ZipArchive<File>, destination: &Path) {
                     "Error: unable to extract directory {i} to {:?}: {e}",
                     out_path.display()
                 );
-                some_files_failed = true;
                 continue;
             } else {
                 println!("Directory {i} extracted to {:?}", out_path.display());
@@ -80,7 +76,6 @@ fn unzip(archive: &mut ZipArchive<File>, destination: &Path) {
                     "Error: unable to create parent directory {p:?} of file {}: {e}",
                     p.display()
                 );
-                some_files_failed = true;
                 continue;
             }
             match fs::File::create(&out_path)
@@ -98,7 +93,6 @@ fn unzip(archive: &mut ZipArchive<File>, destination: &Path) {
                         "Error: unable to extract file {i} to {:?}: {e}",
                         out_path.display()
                     );
-                    some_files_failed = true;
                     continue;
                 }
             }
