@@ -21,7 +21,7 @@ fn convert_all(source: &String, destination: &String) -> () {
         read_dir(unzip_file.path()).unwrap().for_each(|dir_file_result| {
             let dir_file = dir_file_result.unwrap();
 
-            let mut dir_name = dir_file.file_name().to_str().unwrap().to_owned();
+            let dir_name = dir_file.file_name().to_str().unwrap().to_owned();
             let mut dated_dir_name = today_directory();
             dated_dir_name.push('_');
             dated_dir_name.push_str(dir_name.as_str());
